@@ -27,7 +27,7 @@ public class ZookeeperManager {
 		connect(zkHost);
 	}
 
-	public ZooKeeper connect(String host) throws IOException, InterruptedException {
+	private ZooKeeper connect(String host) throws IOException, InterruptedException {
 		zkeeper = new ZooKeeper(host, 2000, new Watcher() {
 			public void process(WatchedEvent we) {
 				if (we.getState() == KeeperState.SyncConnected) {
@@ -37,6 +37,10 @@ public class ZookeeperManager {
 		});
 
 		connectionLatch.await();
+		return zkeeper;
+	}
+
+	public ZooKeeper getZkeeper() {
 		return zkeeper;
 	}
 
@@ -50,8 +54,7 @@ public class ZookeeperManager {
 		}
 	}
 
-	public String getZNodeData(String path, boolean watchFlag)
-			throws KeeperException, InterruptedException, UnsupportedEncodingException {
+	public String getZNodeData(String path) throws KeeperException, InterruptedException, UnsupportedEncodingException {
 		byte[] b = null;
 		b = zkeeper.getData(path, null, null);
 		return new String(b, "UTF-8");

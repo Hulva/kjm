@@ -1,7 +1,12 @@
 package luva.xx.kafka.kjm;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 
 import luva.xx.kafka.kjm.common.thread.WorkerThreadFactory;
 import luva.xx.kafka.kjm.utils.ZookeeperManager;
@@ -25,13 +30,22 @@ public class JMXCollector {
 
 	}
 
-	private void getKafkaJMXUrls(String zkHost) {
+	private List<String> getKafkaJMXUrls(String zkHost) {
+		List<String> jmxUrls = new ArrayList<String>();
 		try {
 			ZookeeperManager zkManager = new ZookeeperManager(zkHost);
+			List<String> childrend = zkManager.getZkeeper().getChildren("/brokers/ids", false);
+			byte[] nodeData = null;
+			for (String child : childrend) {
+				nodeData = zkManager.getZkeeper().getData("/brokers/ids/" + child, false, null);
+				JSONObject jsonBeokerInfo = JSONObject.parseObject(new String(nodeData, "UTF-8"));
+				jmxUrls.add("service:jmx:rmi:///jndi/rmi://" + jsonBeokerInfo.getString("host") + ":"
+						+ jsonBeokerInfo.getIntValue("jmx_port") + "/jmxrmi");
+			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return jmxUrls;
 	}
 
 	public void doCollect() {
@@ -41,7 +55,7 @@ public class JMXCollector {
 //			public void run() {
 //				try {
 //					List<String> groups = og.getGroups();
-//					groups.addAll(SystemManager.og.getGroupsCommittedToBroker());
+//					groups.addAll(SystemManager.og.getGroupsCommittedToBroker());sta
 //					groups.forEach(group -> {
 //						kafkaInfoCollectAndSavePool.submit(new GenerateKafkaInfoTask(group));
 //					});
